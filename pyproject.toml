@@ -8,9 +8,7 @@ version = "0.1.0"
 description = "Universal Topology Engine — Cosmological emergence via persistent homology phase space"
 readme = "README.md"
 license = {text = "MIT"}
-authors = [{name = "Teerth Sharma", url = "https://github.com/teerthsharma"}]
-homepage = "https://github.com/teerthsharma/omni-topos"
-repository = "https://github.com/teerthsharma/omni-topos"
+authors = [{name = "Teerth Sharma", email = "teerth@teerthsharma.com"}]
 keywords = ["topology", "cosmology", "persistent-homology", "betti-numbers", "big-bang", "physics"]
 classifiers = [
     "Development Status :: 3 - Experimental",
@@ -39,6 +37,11 @@ doc = [
 
 [project.scripts]
 omni-topos = "omni_topos:main"
+
+[project.urls]
+Homepage = "https://github.com/teerthsharma/omni-topos"
+Repository = "https://github.com/teerthsharma/omni-topos"
+Source = "https://github.com/teerthsharma/omni-topos"
 
 [tool.setuptools.packages.find]
 where = ["src"]
