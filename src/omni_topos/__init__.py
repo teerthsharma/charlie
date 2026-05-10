@@ -43,9 +43,9 @@ class BettiSignature:
     b1: int
     b2: int
     b3: int = 0
-    betti_vec: np.ndarray | None = field(default=None, init=False, repr=False)
+    betti_vec: np.ndarray = field(default_factory=lambda: np.array([], dtype=np.float64), init=False, repr=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         object.__setattr__(self, 'betti_vec', np.array([self.b0, self.b1, self.b2, self.b3], dtype=np.float64))
 
     @classmethod
@@ -54,7 +54,7 @@ class BettiSignature:
 
     @property
     def is_vacuum(self) -> bool:
-        return self.betti_vec.sum() == 0
+        return bool(self.betti_vec.sum() == 0)
 
     @property
     def total_features(self) -> int:
@@ -97,17 +97,18 @@ class GodTensorEngine:
         self.x_star: np.ndarray | None = None
 
     def learn_T(self, e_signatures: np.ndarray, h_signatures: np.ndarray) -> np.ndarray:
-        T, _, _, _ = np.linalg.lstsq(e_signatures, h_signatures, rcond=None)
+        T, _, _, _ = np.linalg.lstsq(e_signatures, h_signatures, rcond=None)  # type: ignore[return-value]
         self.T = T
         log.info("god_tensor_T_learned", shape=T.shape)
-        return T
+        return T  # type: ignore[no-any-return]
 
     def apply(self, x: np.ndarray) -> np.ndarray:
         """Apply T to a vector."""
         if self.T is None:
             raise ValueError("Must call learn_T first")
         x = np.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0)
-        return self.T @ x
+        result = self.T @ x
+        return result  # type: ignore[no-any-return]
 
     def power_iteration(self, x0: np.ndarray | None = None,
                         iters: int = 50000,
@@ -164,13 +165,13 @@ class HamiltonNBody:
         stacked = np.stack(signatures, axis=0)
         coupled = stacked.flatten()
         coupled = coupled / np.linalg.norm(coupled)
-        return coupled
+        return coupled  # type: ignore[no-any-return]
 
     def learn_H(self, coupled_signatures: np.ndarray) -> np.ndarray:
-        H, _, _, _ = np.linalg.lstsq(coupled_signatures, coupled_signatures, rcond=None)
+        H, _, _, _ = np.linalg.lstsq(coupled_signatures, coupled_signatures, rcond=None)  # type: ignore[return-value]
         self.H = H
         log.info("hamilton_H_learned", shape=H.shape)
-        return H
+        return H  # type: ignore[no-any-return]
 
     def multi_state_iteration(self, psi0: np.ndarray,
                               iters: int = 1000,
@@ -195,7 +196,7 @@ class HamiltonNBody:
         except Exception:
             log.warning("hamilton_iteration_error", psi_norm=np.linalg.norm(psi))
             raise
-        return psi, residual
+        return psi, float(residual)
 
 
 # =============================================================================
@@ -212,10 +213,11 @@ class TopologicalMemory:
         self.phase_history: list[TopologyPhase] = []
 
     def store(self, state: TopologicalState) -> None:
+        barcode_copy: list[Any] = list(state.barcode) if state.barcode else []
         self.barcodes.append({
             "phase": state.phase,
             "betti": state.betti.betti_vec.copy(),
-            "barcode": state.barcode,
+            "barcode": barcode_copy,
             "entropy": state.entropy,
             "age": state.age,
         })
@@ -437,7 +439,7 @@ def main():
             seed=args.seed,
         )
         result = sim.run()
-        print(f"Simulation complete:")
+        print("Simulation complete:")
         print(f"  Steps: {result['n_steps']}")
         print(f"  Final phase: {result['final_phase']}")
         print(f"  Final Betti: {result['final_betti']}")
