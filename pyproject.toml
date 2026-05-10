@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omni-topos"
+version = "0.1.0"
+description = "Universal Topology Engine — Cosmological emergence via persistent homology phase space"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Teerth Sharma", url = "https://github.com/teerthsharma"}]
+homepage = "https://github.com/teerthsharma/omni-topos"
+repository = "https://github.com/teerthsharma/omni-topos"
+keywords = ["topology", "cosmology", "persistent-homology", "betti-numbers", "big-bang", "physics"]
+classifiers = [
+    "Development Status :: 3 - Experimental",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "structlog>=23.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.1",
+    "mypy>=1.0",
+]
+doc = [
+    "sphinx>=7.0",
+]
+
+[project.scripts]
+omni-topos = "omni_topos:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_ignores = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
