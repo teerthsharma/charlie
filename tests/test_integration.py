@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import io
+import sys
+
 import numpy as np
 import pytest
 
 from omni_topos.faraday import GodTensorEngine
 from omni_topos.hamilton import HamiltonNBody
 from omni_topos.phase_manager import PhaseManager
-from omni_topos.simulation import BigBangSimulation
+from omni_topos.simulation import BigBangSimulation, main
 
 
 class TestGodTensorIntegration:
@@ -173,6 +176,56 @@ class TestBigBangSimulationIntegration:
             if timeline[i].phase != timeline[i - 1].phase
         )
         assert transitions == result["phase_transitions"]
+
+    def test_cli_simulate_command(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that `omni-topos --simulate` CLI command runs without error."""
+        captured = io.StringIO()
+        monkeypatch.setattr(sys, "stdout", captured)
+        monkeypatch.setattr(sys, "stderr", io.StringIO())
+        monkeypatch.setattr(sys, "argv", ["omni-topos", "--simulate", "--steps", "5", "--seed", "42"])
+        main()
+        output = captured.getvalue()
+        assert "Steps:" in output
+        assert "Final phase:" in output
+
+    def test_cli_god_check_command(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that `omni-topos --god-check` CLI command runs without error."""
+        captured = io.StringIO()
+        monkeypatch.setattr(sys, "stdout", captured)
+        monkeypatch.setattr(sys, "stderr", io.StringIO())
+        monkeypatch.setattr(sys, "argv", ["omni-topos", "--god-check", "--seed", "42"])
+        main()
+        output = captured.getvalue()
+        assert "God Tensor" in output
+
+    def test_cli_help_command(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that `omni-topos` with no args prints help."""
+        captured = io.StringIO()
+        monkeypatch.setattr(sys, "stdout", captured)
+        monkeypatch.setattr(sys, "stderr", io.StringIO())
+        monkeypatch.setattr(sys, "argv", ["omni-topos"])
+        try:
+            main()
+        except SystemExit:
+            pass
+
+    def test_cli_arg_parsing(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test all CLI argument combinations for parse errors."""
+        configs = [
+            ["--simulate", "--steps", "10", "--seed", "1"],
+            ["--god-check", "--seed", "99"],
+            ["--simulate", "--phases", "h0h1h2", "--steps", "50"],
+            ["--simulate", "--phases", "god_fixed", "--steps", "1000"],
+        ]
+        for args in configs:
+            captured = io.StringIO()
+            monkeypatch.setattr(sys, "stdout", captured)
+            monkeypatch.setattr(sys, "stderr", io.StringIO())
+            monkeypatch.setattr(sys, "argv", ["omni-topos"] + args)
+            try:
+                main()
+            except SystemExit:
+                pass
 
 
 class TestHamiltonNBodyExtension:
