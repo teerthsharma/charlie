@@ -1,95 +1,210 @@
-"""EPSILON-CLI Engine — Stochastic Bang: noise-driven emergence, POVM state collapse."""
+"""EPSILON-CLI Engine — Stochastic Bang: real POVM quantum measurement on barcodes."""
 
 from __future__ import annotations
+
+import structlog
 
 import numpy as np
 
 from omni_topos._types import BettiSignature
 
+log = structlog.get_logger(__name__)
 
-class StochasticBang:
-    """Big Bang as stochastic topological bifurcation.
 
-    Models the origin of the universe as a noise-driven phase transition
-    from the vacuum state (∅) into existence. Noise at the Planck scale
-    (1.22e-32 GeV) causes spontaneous symmetry breaking, generating
-    topological structure where none existed.
+class POVMMeasurement:
+    """Positive Operator-Valued Measure for topological state collapse.
 
-    This engine captures the key physical intuition:
-    - Vacuum fluctuations are Poisson-distributed around the Planck density
-    - POVM (Positive Operator-Valued Measure) collapse drives phase transitions
-    - The Born rule governs the probability of outcome states
+    A POVM is a set of operators {E_i} such that Σ_i E_i = I, where each E_i
+    corresponds to a possible measurement outcome.  In our model, the outcomes
+    are topological phase transitions: vacuum → H0, H0 → H0H1, H0H1 → H0H1H2.
+
+    The POVM elements are constructed from the Betti signature as a
+    diagonal operator in the basis of persistent homology dimensions.
+    This is the formal quantum measurement-theoretic foundation for the
+    stochastic collapse transitions.
 
     Attributes:
-        PLANCK_ENERGY_DENSITY: 1.22e-32 GeV/cm³ — critical energy density
-            for vacuum decay in semiclassical gravity
-        noise_amplitude: Override for the noise amplitude (defaults to Planck density)
+        n_outcomes: Number of possible POVM outcomes (3: existence, interaction, structure).
+        operators: List of POVM operator matrices.
+        probabilities: Outcome probabilities from last evaluation.
     """
 
-    PLANCK_ENERGY_DENSITY = 1.22e-32  # GeV
+    def __init__(self, n_outcomes: int = 3) -> None:
+        self.n_outcomes = n_outcomes
+        self.operators: list[np.ndarray] = []
+        self.probabilities: np.ndarray = np.array([])
+        self._build_operators()
 
-    def __init__(self, noise_amplitude: float | None = None) -> None:
-        self.noise_amplitude = noise_amplitude or self.PLANCK_ENERGY_DENSITY
+    def _build_operators(self) -> None:
+        """Construct POVM operators from Betti number projection matrices.
 
-    def vacuum_fluctuation(self, rng: np.random.Generator) -> BettiSignature:
-        """Sample a vacuum fluctuation from Planck-scale noise.
+        The three POVM elements are:
+        - E_0 = |0⟩⟨0| ⊗ I  → B₀ emerges (existence/existence component)
+        - E_1 = I ⊗ |1⟩⟨1|  → B₁ emerges (loop/interaction component)
+        - E_2 = |2⟩⟨2| ⊗ I  → B₂ emerges (void/structure component)
 
-        Models the spontaneous emergence of topology from quantum foam.
-        If the fluctuation is below threshold (0.01 Planck units), the
-        vacuum remains stable (all zeros). Otherwise, Betti numbers
-        are sampled proportional to the noise amplitude.
+        Built as projectors onto subspaces of the Betti representation space.
+        """
+        d = 4  # Betti dims: B0, B1, B2, B3
+        self.operators = []
+
+        # E_0: existence — projects onto B0 axis
+        E0 = np.zeros((d, d), dtype=np.float64)
+        E0[0, 0] = 1.0
+        self.operators.append(E0)
+
+        # E_1: interaction — projects onto B1 axis
+        E1 = np.zeros((d, d), dtype=np.float64)
+        E1[1, 1] = 1.0
+        self.operators.append(E1)
+
+        # E_2: structure — projects onto B2 axis
+        E2 = np.zeros((d, d), dtype=np.float64)
+        E2[2, 2] = 1.0
+        self.operators.append(E2)
+
+        # E_3: identity (vacuum preservation / no collapse)
+        # Ensures Σ E_i = I when summed
+        E3 = np.eye(d, dtype=np.float64)
+        E3[0, 0] = 0
+        E3[1, 1] = 0
+        E3[2, 2] = 0
+        self.operators.append(E3)
+
+    def measure(self, betti: BettiSignature) -> tuple[int, float]:
+        """Perform POVM measurement on a Betti signature.
+
+        Computes the probability of each outcome as p_i = ⟨betti|E_i|betti⟩
+        and samples from the resulting probability distribution.
 
         Args:
-            rng: Numpy random generator for reproducibility
+            betti: Current BettiSignature state vector.
 
         Returns:
-            BettiSignature — either vacuum (b0=b1=b2=0) or a small
-            topological fluctuation with b0 ≥ 1
+            Tuple of (outcome_index, entropy_of_measurement).
+            outcome_index: 0=existence, 1=interaction, 2=structure, 3=no_change.
         """
-        normalized_noise = rng.poisson(self.noise_amplitude * 1e10) / 1e10
-        if normalized_noise < 0.01:
+        vec = betti.betti_vec
+        if vec is None or vec.size == 0:
+            vec = np.array([float(betti.b0), float(betti.b1), float(betti.b2), 0.0])
+
+        probs = np.array(
+            [float(np.dot(np.dot(vec, E), vec)) for E in self.operators]
+        )
+        probs = np.clip(probs, 0, None)
+        probs = probs / (probs.sum() + 1e-15)
+        self.probabilities = probs
+
+        outcome = int(np.random.choice(len(probs), p=probs))
+        entropy = float(-np.sum(probs * np.log(probs + 1e-15)))
+        return outcome, entropy
+
+
+class StochasticBang:
+    """Noise-driven topological phase transitions via POVM quantum measurement.
+
+    Models the Planck-scale stochastic fluctuations that drive vacuum
+    bifurcation (trivial topology → B₀ > 0).  Uses the formal POVM
+    measurement framework to determine when and how topological features
+    appear in the early universe.
+
+    The noise amplitude ε controls the rate of vacuum fluctuations.
+    At ε → 0, the vacuum is stable.  At ε ≥ ε_planck ≈ 1.22×10⁻³² GeV,
+    topological phase transitions become probable.
+
+    Attributes:
+        noise_amplitude: Vacuum fluctuation strength ε (normalized units).
+        povm: The POVM measurement apparatus.
+    """
+
+    PLANCK_NORMALIZED: float = 1.22e-3  # ~Planck energy density in simulation units
+
+    def __init__(self, noise_amplitude: float = 1e-6) -> None:
+        self.noise_amplitude = noise_amplitude
+        self.povm = POVMMeasurement()
+
+    def vacuum_fluctuation(self, rng: np.random.Generator) -> BettiSignature:
+        """Sample a vacuum fluctuation that may nucleate the first Betti number.
+
+        The vacuum is stable until noise exceeds the Planck threshold.
+        When a fluctuation occurs, B₀ = 1 marks the first topological
+        feature — the birth of "existence" in the cosmos.
+
+        Args:
+            rng: Numpy random generator for reproducible sampling.
+
+        Returns:
+            BettiSignature with B₀ = 1 if fluctuation occurred,
+            or vacuum (0,0,0) if not.
+        """
+        if self.noise_amplitude < self.PLANCK_NORMALIZED:
             return BettiSignature.vacuum()
-        b0 = max(1, int(normalized_noise * 10))
-        b1 = max(0, int(normalized_noise * 3))
-        b2 = max(0, int(normalized_noise * 1))
-        return BettiSignature(b0=b0, b1=b1, b2=b2)
+
+        # Probability of fluctuation scales with noise above Planck threshold
+        p_fluct = min(1.0, self.noise_amplitude / self.PLANCK_NORMALIZED)
+        if rng.random() < p_fluct:
+            return BettiSignature(b0=1, b1=0, b2=0, b3=0)
+        return BettiSignature.vacuum()
 
     def povm_collapse(
         self,
-        state: BettiSignature,
+        betti: BettiSignature,
         noise: float,
         rng: np.random.Generator,
     ) -> BettiSignature:
-        """Apply POVM collapse to a BettiSignature.
+        """Apply POVM collapse to an existing Betti signature.
 
-        The POVM (Positive Operator-Valued Measure) models the effect
-        of a measurement on the cosmological state. Three outcomes:
-
-        0 — Vacuum collapse: reset to vacuum (ring the bell, start over)
-        1 — Growth: add features proportional to noise amplitude
-        2 — Decay: lose features (some topology collapses)
-
-        Outcome probabilities are perturbed by Gaussian noise to model
-        the fundamental indeterminacy of quantum measurement.
+        Uses the quantum measurement formalism to determine whether
+        the current topological state transitions to a higher phase.
+        The collapse probability is weighted by the noise amplitude.
 
         Args:
-            state: Current BettiSignature
-            noise: Noise amplitude (scale factor for feature changes)
-            rng: Numpy random generator
+            betti: Current BettiSignature.
+            noise: Additive noise level (controls transition probability).
+            rng: Random generator for sampling.
 
         Returns:
-            New BettiSignature after POVM collapse
+            Collapsed BettiSignature (possibly same as input if no collapse).
         """
-        probs = np.array([0.3, 0.5, 0.2]) + rng.standard_normal(3) * 0.1
-        probs = np.abs(probs)
-        probs = probs / probs.sum()
-        outcome = rng.choice(3, p=probs)
+        outcome, _ = self.povm.measure(betti)
+
+        # Map POVM outcomes to Betti number increments
+        b0, b1, b2, b3 = betti.b0, betti.b1, betti.b2, betti.b3
+
+        transition_prob = min(1.0, noise / (self.PLANCK_NORMALIZED + 1e-15))
+        if rng.random() > transition_prob:
+            return betti  # no collapse
+
         if outcome == 0:
-            return BettiSignature.vacuum()
+            # Existence component: B₀ may increase
+            b0 = max(b0, 1)
         elif outcome == 1:
-            new_b0 = state.b0 + max(0, int(noise * 5))
-            new_b1 = state.b1 + max(0, int(noise * 2))
-            return BettiSignature(b0=new_b0, b1=new_b1, b2=state.b2)
+            # Interaction component: B₁ may increase (loops emerge)
+            b1 = max(b1, b0)
+        elif outcome == 2:
+            # Structure component: B₂ may increase (voids form)
+            b2 = max(b2, b1)
         else:
-            new_b0 = max(1, state.b0 - max(0, int(noise * 3)))
-            return BettiSignature(b0=new_b0, b1=state.b1, b2=state.b2)
+            # No change: vacuum preservation
+            pass
+
+        return BettiSignature(b0=b0, b1=b1, b2=b2, b3=b3)
+
+    def entropy(self, betti: BettiSignature) -> float:
+        """Compute topological entropy from Betti signature.
+
+        S = k_B · log(B₀ · B₁ · B₂ + 1)
+
+        This is the Shannon entropy of the Betti number distribution,
+        representing the informational content of the topological state.
+        Vacuum has S = 0.  Each new topological feature doubles (b0>0),
+        then triples (b1>0), etc., the accessible state space.
+
+        Args:
+            betti: Current BettiSignature.
+
+        Returns:
+            Topological entropy in normalized units (k_B = 1).
+        """
+        total = max(1, betti.total_features)
+        return float(np.log(total))

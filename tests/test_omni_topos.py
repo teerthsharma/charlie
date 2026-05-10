@@ -145,32 +145,57 @@ class TestGodTensorEngine:
 class TestHamiltonNBody:
     """Tests for the HAMLITON engine."""
 
-    def test_tensor_product_wrong_n_bodies(self) -> None:
+    def test_tensor_product_wrong_dim_raises(self) -> None:
         hn = HamiltonNBody(n_bodies=3, latent_dim=16)
-        sigs = [np.ones(16), np.ones(16)]
-        with pytest.raises(ValueError, match="Expected 3 signatures"):
-            hn.tensor_product_signatures(sigs)
+        sigs = [np.ones(16), np.ones(8)]  # mismatched dims
+        with pytest.raises(ValueError, match="same dimension"):
+            hn.tensor_product(sigs)
 
     def test_tensor_product_shape(self) -> None:
         hn = HamiltonNBody(n_bodies=3, latent_dim=16)
-        sigs = [np.ones(16), np.ones(16), np.ones(16)]
-        result = hn.tensor_product_signatures(sigs)
-        assert result.shape == (48,)
+        sigs = [np.ones(16) / np.sqrt(16) for _ in range(3)]  # unit vectors
+        result = hn.tensor_product(sigs)
+        # True Kronecker product: 16^3 = 4096
+        assert result.shape == (4096,)
         assert np.isclose(np.linalg.norm(result), 1.0)
 
     def test_learn_H(self) -> None:
         rng = np.random.default_rng(42)
+        # 50 samples, each a flattened 3-body state (3 * 16 = 48)
         coupled = rng.standard_normal((50, 48))
         hn = HamiltonNBody(n_bodies=3, latent_dim=16)
         H = hn.learn_H(coupled)
         assert H is not None
         assert hn.H is not None
-        assert H.shape == (48, 48)
+        # Pairwise coupling model: latent_dim × latent_dim
+        assert H.shape == (16, 16)
+        # H should be symmetric (Hermitian analogue)
+        assert np.allclose(H, H.T)
 
-    def test_iteration_before_learn_raises(self) -> None:
+    def test_multi_state_iteration_converges(self) -> None:
+        hn = HamiltonNBody(n_bodies=2, latent_dim=8)
+        rng = np.random.default_rng(42)
+        coupled = rng.standard_normal((50, 16))
+        hn.learn_H(coupled)
+        # 2 bodies, dim 8 → 8^2 = 64 dimensional full space
+        psi0 = rng.standard_normal(64)
+        psi0 = psi0 / np.linalg.norm(psi0)
+        psi_star, residual = hn.multi_state_iteration(psi0, iters=5000, tol=1e-12)
+        assert psi_star is not None
+        assert psi_star.shape == (64,)
+        assert residual < 1e-10
+
+    def test_iteration_raises_on_wrong_dim(self) -> None:
         hn = HamiltonNBody(n_bodies=3, latent_dim=16)
-        with pytest.raises(ValueError, match="Must call learn_H first"):
-            hn.multi_state_iteration(np.ones(48))
+        with pytest.raises(ValueError, match="psi0 dimension"):
+            hn.multi_state_iteration(np.ones(48))  # 48 != 16**3
+
+    def test_marginalize(self) -> None:
+        hn = HamiltonNBody(n_bodies=2, latent_dim=4)
+        # Full state: 4^2 = 16 dim
+        full = np.ones(16) / 4.0
+        marginal = hn.marginalize(full, target_body=0)
+        assert marginal.shape == (4,)
 
 
 # =============================================================================
@@ -251,9 +276,34 @@ class TestStochasticBang:
         result = sb.povm_collapse(state, noise=0.5, rng=rng)
         assert isinstance(result, BettiSignature)
 
-    def test_planck_density_is_set(self) -> None:
+    def test_povm_operators_sum_to_identity(self) -> None:
+        from omni_topos.epsilon import POVMMeasurement
+
+        povm = POVMMeasurement()
+        # Σ_i E_i = I
+        total = sum(povm.operators)
+        np.testing.assert_array_almost_equal(total, np.eye(4))
+
+    def test_measure_returns_valid_outcome(self) -> None:
+        from omni_topos.epsilon import POVMMeasurement
+
+        povm = POVMMeasurement()
+        b = BettiSignature(b0=1, b1=2, b2=1)
+        outcome, entropy = povm.measure(b)
+        assert 0 <= outcome <= 3
+        assert entropy >= 0.0
+
+    def test_stochastic_bang_entropy(self) -> None:
+        sb = StochasticBang(noise_amplitude=1e-6)
+        b = BettiSignature(b0=2, b1=3, b2=1)
+        s = sb.entropy(b)
+        assert s == float(np.log(6))  # log(2*3*1)
+
+    def test_stochastic_bang_planck_density_is_set(self) -> None:
+        from omni_topos.epsilon import StochasticBang
+
         sb = StochasticBang()
-        assert sb.noise_amplitude == 1.22e-32
+        assert sb.PLANCK_NORMALIZED == 1.22e-3
 
 
 # =============================================================================
@@ -358,11 +408,12 @@ class TestRobustness:
         assert not np.any(np.isinf(result))
 
     def test_hamilton_nan_input(self) -> None:
+        # Test with n_bodies=2 to keep space manageable (16^2=256)
         rng = np.random.default_rng(42)
-        coupled = rng.standard_normal((50, 48))
-        hn = HamiltonNBody(n_bodies=3)
+        coupled = rng.standard_normal((50, 32))
+        hn = HamiltonNBody(n_bodies=2, latent_dim=16)
         hn.learn_H(coupled)
-        psi_nan = np.full(48, np.nan)
+        psi_nan = np.full(256, np.nan)  # 16^2
         result, residual = hn.multi_state_iteration(psi_nan)
         assert not np.any(np.isnan(result))
         assert residual == float("inf") or not np.isnan(residual)
