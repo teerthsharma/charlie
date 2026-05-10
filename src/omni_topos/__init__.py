@@ -103,8 +103,10 @@ class GodTensorEngine:
         return T
 
     def apply(self, x: np.ndarray) -> np.ndarray:
+        """Apply T to a vector."""
         if self.T is None:
             raise ValueError("Must call learn_T first")
+        x = np.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0)
         return self.T @ x
 
     def power_iteration(self, x0: np.ndarray | None = None,
@@ -113,16 +115,23 @@ class GodTensorEngine:
         if x0 is None:
             rng = np.random.default_rng(42)
             x0 = rng.standard_normal(self.latent_dim)
-            x0 = x0 / np.linalg.norm(x0)
+        x0 = np.nan_to_num(x0, nan=0.0, posinf=0.0, neginf=0.0)
+        x0_norm = np.linalg.norm(x0)
+        if x0_norm < 1e-15:
+            raise ValueError("Initial vector has zero norm — cannot iterate")
+        x0 = x0 / x0_norm
 
         x = x0.copy()
+        residual = float('inf')
         for i in range(iters):
             x_new = self.apply(x)
             norm = np.linalg.norm(x_new)
             if norm < 1e-15:
+                log.warning("power_iteration_norm_collapsed", iter=i)
                 break
             x_new = x_new / norm
-            residual = np.linalg.norm(x_new - x)
+            x_new = np.nan_to_num(x_new, nan=0.0, posinf=0.0, neginf=0.0)
+            residual = float(np.linalg.norm(x_new - x))
             if residual < tol:
                 log.info("god_tensor_converged", iter=i, residual=residual)
                 break
@@ -169,17 +178,23 @@ class HamiltonNBody:
         if self.H is None:
             raise ValueError("Must call learn_H first")
         psi = psi0.copy()
-        for i in range(iters):
-            psi_new = self.H @ psi
-            norm = np.linalg.norm(psi_new)
-            if norm < 1e-15:
-                break
-            psi_new = psi_new / norm
-            residual = np.linalg.norm(psi_new - psi)
-            if residual < tol:
-                log.info("hamilton_converged", iter=i, residual=residual)
-                break
-            psi = psi_new
+        psi = np.nan_to_num(psi, nan=0.0, posinf=0.0, neginf=0.0)
+        try:
+            for i in range(iters):
+                psi_new = self.H @ psi
+                norm = np.linalg.norm(psi_new)
+                if norm < 1e-15:
+                    break
+                psi_new = psi_new / norm
+                psi_new = np.nan_to_num(psi_new, nan=0.0, posinf=0.0, neginf=0.0)
+                residual = np.linalg.norm(psi_new - psi)
+                if residual < tol:
+                    log.info("hamilton_converged", iter=i, residual=residual)
+                    break
+                psi = psi_new
+        except Exception:
+            log.warning("hamilton_iteration_error", psi_norm=np.linalg.norm(psi))
+            raise
         return psi, residual
 
 
