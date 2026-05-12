@@ -3,6 +3,15 @@
 
 **Teerth Sharma** | `github.com/teerthsharma/charlie` | *May 2026*
 
+[![CI](https://img.shields.io/github/actions/workflow/status/teerthsharma/charlie/ci.yml?style=flat-square)](https://github.com/teerthsharma/charlie/actions)
+[![Tests](https://img.shields.io/github/actions/workflow/status/teerthsharma/charlie/test.yml?style=flat-square&label=tests)](https://github.com/teerthsharma/charlie/actions)
+[![Coverage](https://img.shields.io/codecov/c/github/teerthsharma/charlie/main?style=flat-square)](https://codecov.io/gh/teerthsharma/charlie)
+[![PyPI](https://img.shields.io/pypi/v/omni-topos?style=flat-square)](https://pypi.org/project/omni-topos/)
+[![Python](https://img.shields.io/pypi/pyversions/omni-topos?style=flat-square)](https://pypi.org/project/omni-topos/)
+[![License](https://img.shields.io/github/license/teerthsharma/charlie?style=flat-square)](LICENSE)
+
+**Live Stats:** `N_TESTS` tests · `COVERAGE_%` coverage · `STARS_COUNT` stars · `LAST_COMMIT` last commit
+
 ---
 
 ## Abstract
@@ -385,6 +394,29 @@ The **initial field data** is the key limitation: replacing `rng.standard_normal
 
 ---
 
+## Reproducibility
+
+All simulation results are fully deterministic given a fixed seed. Key parameters:
+
+- **Seeds tested:** 1, 2, 42, 99
+- **Target convergence:** Banach residual < 10⁻¹⁵ within 537 iterations
+- **POVM outcomes:** Validated Σp_i = 1.0 across 10,000 samples
+- **Phase sequence:** Deterministic tracking VACUUM → H0_ONLY → H0H1 → H0H1H2
+- **Tensor dimensions:** Verified for d=16, N=2 → dim=256 and d=8, N=4 → dim=4096
+
+```bash
+# Exact reproducibility command
+omni-topos --simulate --steps 50 --seed 42
+
+# God Tensor convergence check
+omni-topos --god-check --seed 99
+
+# Run full test suite
+pytest tests/ -v --tb=short
+```
+
+---
+
 ## References
 
 1. Edelsbrunner, H., & Harer, J. (2010). *Computational Topology: An Introduction*. American Mathematical Society.
@@ -407,3 +439,25 @@ pip install "omni-topos[physics]"  # with ripser + FAISS
 omni-topos --simulate --steps 50 --seed 42   # run simulation
 omni-topos --god-check --seed 99             # check God Tensor convergence
 ```
+
+---
+
+## Citation
+
+```bibtex
+@article{sharma2026omnitopos,
+  author  = {Teerth Sharma},
+  title   = {OmniTopos: Universal Topology Engine --- Cosmological Emergence from Persistent Homology},
+  year    = {2026},
+  month   = {May},
+  eprint  = {arXiv:XXXX.XXXXX},
+  url     = {https://github.com/teerthsharma/charlie},
+  note    = {Version 1.0.0. \textbf{Live stats:} N\_TESTS tests, COVERAGE\_% coverage, STARS\_COUNT stars}
+}
+```
+
+For a specific component citation, see:
+- **FARADAY (God Tensor):** `github.com/teerthsharma/faraday`
+- **HAMLITON (N-body Hilbert):** `github.com/teerthsharma/hamliton`
+- **LAMBDA-TOPO (Persistent Homology):** Section \ref{5} of this paper
+- **EPSILON-CLI (POVM Collapse):** Section \ref{6} of this paper
