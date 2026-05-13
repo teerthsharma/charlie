@@ -235,7 +235,7 @@ class HamiltonNBody:
             result = np.zeros_like(state)
             for body_state in state:
                 result += self.H @ body_state
-            return result  # type: ignore[return-value]
+            return result
 
         # Full tensor-product state: apply H ⊗ H via einsum pairwise
         full_dim = self.latent_dim**self.n_bodies

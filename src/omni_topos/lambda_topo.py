@@ -7,8 +7,8 @@ from typing import Any
 import numpy as np
 
 try:
-    import ripser  # type: ignore[import-untyped]
-    import faiss  # type: ignore[import-untyped]
+    import ripser
+    import faiss
 
     _HAS_RIPSER = True
     _HAS_FAISS = True

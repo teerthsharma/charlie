@@ -46,10 +46,10 @@ class GodTensorEngine:
         Returns:
             The learned operator T
         """
-        T, _, _, _ = np.linalg.lstsq(e_signatures, h_signatures, rcond=None)  # type: ignore[return-value]
+        T: np.ndarray = np.linalg.lstsq(e_signatures, h_signatures, rcond=None)[0]
         self.T = T
         log.info("god_tensor_T_learned", shape=T.shape)
-        return T  # type: ignore[no-any-return]
+        return T
 
     def apply(self, x: np.ndarray) -> np.ndarray:
         """Apply the coupling operator T to a vector.
