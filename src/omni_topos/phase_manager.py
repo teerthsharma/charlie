@@ -118,9 +118,7 @@ class PhaseManager:
         Returns:
             Evolved TopologicalState for the next simulation step.
         """
-        noise_amplitude = abs(
-            rng.standard_normal() * max(state.entropy, 0.01) / 10
-        )
+        noise_amplitude = abs(rng.standard_normal() * max(state.entropy, 0.01) / 10)
 
         # Apply God Tensor to evolve the Hilbert signature
         if self.god_tensor.T is not None:

@@ -120,9 +120,7 @@ class TopologicalMemory:
         barcode_copy["age"] = state.age
 
         self.barcodes.append(barcode_copy)
-        self.signatures.append(
-            sig.copy() if sig is not None else np.zeros(self.latent_dim)
-        )
+        self.signatures.append(sig.copy() if sig is not None else np.zeros(self.latent_dim))
         self.phase_history.append(state.phase)
 
         # Rebuild FAISS index

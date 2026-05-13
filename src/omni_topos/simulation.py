@@ -97,17 +97,15 @@ class BigBangSimulation:
                 log.info("simulation_converged", step=step, residual=state.residual)
                 break
             target_reached = (
-                (self.final_topology == "h0h1h2" and state.phase == TopologyPhase.H0H1H2)
-                or (state.residual is not None and state.residual < 1e-15)
-            )
+                self.final_topology == "h0h1h2" and state.phase == TopologyPhase.H0H1H2
+            ) or (state.residual is not None and state.residual < 1e-15)
             if target_reached:
                 log.info("target_phase_reached", step=step, phase=state.phase.value)
                 break
 
         final_state = timeline[-1]
         transitions = sum(
-            1 for i in range(1, len(timeline))
-            if timeline[i].phase != timeline[i - 1].phase
+            1 for i in range(1, len(timeline)) if timeline[i].phase != timeline[i - 1].phase
         )
         return {
             "n_steps": len(timeline),
@@ -129,9 +127,7 @@ def main() -> None:
     """CLI entry point for OmniTopos simulation."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="OmniTopos: Cosmological Topology Simulator"
-    )
+    parser = argparse.ArgumentParser(description="OmniTopos: Cosmological Topology Simulator")
     parser.add_argument(
         "--simulate",
         action="store_true",

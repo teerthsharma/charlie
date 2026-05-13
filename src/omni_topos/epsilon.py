@@ -88,9 +88,7 @@ class POVMMeasurement:
         if vec is None or vec.size == 0:
             vec = np.array([float(betti.b0), float(betti.b1), float(betti.b2), 0.0])
 
-        probs = np.array(
-            [float(np.dot(np.dot(vec, E), vec)) for E in self.operators]
-        )
+        probs = np.array([float(np.dot(np.dot(vec, E), vec)) for E in self.operators])
         probs = np.clip(probs, 0, None)
         probs = probs / (probs.sum() + 1e-15)
         self.probabilities = probs

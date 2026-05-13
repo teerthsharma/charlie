@@ -177,8 +177,7 @@ class TestBigBangSimulationIntegration:
         # Verify the transition count is consistent
         timeline = result["timeline"]
         transitions = sum(
-            1 for i in range(1, len(timeline))
-            if timeline[i].phase != timeline[i - 1].phase
+            1 for i in range(1, len(timeline)) if timeline[i].phase != timeline[i - 1].phase
         )
         assert transitions == result["phase_transitions"]
 
@@ -187,7 +186,9 @@ class TestBigBangSimulationIntegration:
         captured = io.StringIO()
         monkeypatch.setattr(sys, "stdout", captured)
         monkeypatch.setattr(sys, "stderr", io.StringIO())
-        monkeypatch.setattr(sys, "argv", ["omni-topos", "--simulate", "--steps", "5", "--seed", "42"])
+        monkeypatch.setattr(
+            sys, "argv", ["omni-topos", "--simulate", "--steps", "5", "--seed", "42"]
+        )
         main()
         output = captured.getvalue()
         assert "Steps:" in output

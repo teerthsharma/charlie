@@ -240,9 +240,7 @@ class HamiltonNBody:
         # Full tensor-product state: apply H ⊗ H via einsum pairwise
         full_dim = self.latent_dim**self.n_bodies
         if state.shape != (full_dim,):  # pragma: no cover
-            raise ValueError(
-                f"Full-state dimension {state.shape} != expected ({full_dim},)"
-            )
+            raise ValueError(f"Full-state dimension {state.shape} != expected ({full_dim},)")
 
         shape = (self.latent_dim,) * self.n_bodies
         psi = state.reshape(shape)

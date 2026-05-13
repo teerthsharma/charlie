@@ -151,9 +151,7 @@ class GodTensorEngine:
         """
         x_new = self.apply(x)
         god_score = self.god_score(x_new)
-        residual = (
-            float(np.linalg.norm(x_new - x)) if self.x_star is not None else float("inf")
-        )
+        residual = float(np.linalg.norm(x_new - x)) if self.x_star is not None else float("inf")
         return GodTensorResult(
             x_new=x_new,
             residual=residual,

@@ -18,6 +18,7 @@ from omni_topos.simulation import BigBangSimulation
 # BettiSignature tests
 # =============================================================================
 
+
 class TestBettiSignature:
     """Tests for the BettiSignature class."""
 
@@ -47,6 +48,7 @@ class TestBettiSignature:
 # =============================================================================
 # GodTensorEngine (FARADAY) tests
 # =============================================================================
+
 
 class TestGodTensorEngine:
     """Tests for the FARADAY engine GodTensorEngine."""
@@ -142,6 +144,7 @@ class TestGodTensorEngine:
 # HamiltonNBody (HAMLITON) tests
 # =============================================================================
 
+
 class TestHamiltonNBody:
     """Tests for the HAMLITON engine."""
 
@@ -202,6 +205,7 @@ class TestHamiltonNBody:
 # TopologicalMemory (LAMBDA-TOPO) tests
 # =============================================================================
 
+
 class TestTopologicalMemory:
     """Tests for the LAMBDA-TOPO memory engine."""
 
@@ -253,6 +257,7 @@ class TestTopologicalMemory:
 # =============================================================================
 # StochasticBang (EPSILON-CLI) tests
 # =============================================================================
+
 
 class TestStochasticBang:
     """Tests for the EPSILON-CLI stochastic engine."""
@@ -310,6 +315,7 @@ class TestStochasticBang:
 # PhaseManager tests
 # =============================================================================
 
+
 class TestPhaseManager:
     """Tests for the PhaseManager."""
 
@@ -352,6 +358,7 @@ class TestPhaseManager:
 # BigBangSimulation tests
 # =============================================================================
 
+
 class TestBigBangSimulation:
     """Tests for the full simulation."""
 
@@ -382,6 +389,7 @@ class TestBigBangSimulation:
 # =============================================================================
 # NaN/Inf robustness tests
 # =============================================================================
+
 
 class TestRobustness:
     """Tests for numerical robustness."""
